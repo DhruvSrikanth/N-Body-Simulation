@@ -3,6 +3,8 @@ import matplotlib.pyplot as plt
 import ast
 import os
 import cv2
+from multiprocessing import Pool
+
 
 
 plt.style.use('seaborn-poster')
@@ -16,6 +18,14 @@ def read_file(filename):
         data = ast.literal_eval(file_str)
         grid = np.array(data)
     return grid
+
+def plot_point(point, ax):
+    '''
+    Plot the point.
+    '''
+    x, y, z = point
+    ax.scatter3D(x, y, z)
+    return ax
 
 def generate_movie():
     '''
@@ -34,13 +44,12 @@ def generate_movie():
 
             ax = fig.add_subplot(111, projection='3d')
 
-            for j in range(0, len(data)):
-                x, y, z = data[j]
-                ax.scatter3D(x, y, z)
+            for point in data:
+                ax = plot_point(point, ax)
             
-            ax.set_xlim(0, 1)
-            ax.set_ylim(0, 1)
-            ax.set_zlim(0, 1)
+            # ax.set_xlim(0, 1)
+            # ax.set_ylim(0, 1)
+            # ax.set_zlim(0, 1)
 
             ax.set_xlabel('X')
             ax.set_ylabel('Y')

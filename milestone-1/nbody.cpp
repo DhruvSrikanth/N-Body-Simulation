@@ -55,21 +55,26 @@ void initialize_bodies(Body* bodies, int n) {
     // Set the random seed
     // srand(1); 
     int i;
+    double phi, theta;
 
-    #pragma omp parallel for default(none) private(i) shared(bodies, n) schedule(guided)
+    #pragma omp parallel for default(none) private(i, phi, theta) shared(bodies, n) schedule(guided)
     for (i = 0; i < n; i++) {
-        // Initialize the bodies to a uniform distribution in the unit cube [0,1]^3
-        bodies[i].r.x = (double)rand() / (double) RAND_MAX;
-        bodies[i].r.y = (double)rand() / (double) RAND_MAX;
-        bodies[i].r.z = (double)rand() / (double) RAND_MAX;
+        // sample random phi and theta
+        phi = 2 * M_PI * (double)rand() / (double)RAND_MAX;
+        theta = acos((double)rand() / (double)RAND_MAX);
 
-        // Initialize the velocity of each body to a random value in the unit cube [-1,1]^3
-        bodies[i].v.x = (double)rand() / (double) RAND_MAX * 2 - 1;
-        bodies[i].v.y = (double)rand() / (double) RAND_MAX * 2 - 1;
-        bodies[i].v.z = (double)rand() / (double) RAND_MAX * 2 - 1;
+        // Set the position to follow parametrized elipse
+        bodies[i].r.x = cos(theta) * sin(phi);
+        bodies[i].r.y = sin(theta) * sin(phi);
+        bodies[i].r.z = cos(phi);
 
-        // Initialize the mass of each body to a random value
-        bodies[i].m = 1.0;
+        // Set the velocity to follow parametrized elipse
+        bodies[i].v.x = -sin(theta) * sin(phi);
+        bodies[i].v.y = cos(theta) * sin(phi);
+        bodies[i].v.z = -sin(phi);
+
+        // Set the mass to be a function of the radius to the center of the elipse
+        bodies[i].m = 1.0 / (1.0 + bodies[i].r.x * bodies[i].r.x + bodies[i].r.y * bodies[i].r.y + bodies[i].r.z * bodies[i].r.z);
     }    
 }
 

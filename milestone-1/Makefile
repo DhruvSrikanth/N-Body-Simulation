@@ -6,16 +6,16 @@ GCC = g++-11
 VISUALIZE = "true"
 
 # Input to cpp
-n = "1000"
-dt = "0.001"
-NT = "1000"
+n = "500"
+dt = "0.1"
+NT = "2000"
 G = "6.6743e-11"
 
 # Number of threads
 num_threads = "8"
 
 # Run sequence
-TARGETS = output simulation visualize clean_runtime
+TARGETS = output simulation visualize clean_runtime clean_text clean_png
 
 # Run the following
 target: $(TARGETS)
@@ -54,7 +54,6 @@ clean_runtime:
 	@echo "Cleaning runtime files...\n"
 	rm -rf __pycache__
 	rm *.out
-	rm .DS_Store
 
 clean_text:
 	@echo "Cleaning text files...\n"
