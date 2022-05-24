@@ -6,7 +6,7 @@ GCC = g++-11
 VISUALIZE = "true"
 
 # Plot type
-plot_type = "surface"
+plot_type = "point"
 
 # Input to cpp
 n = "1000"
