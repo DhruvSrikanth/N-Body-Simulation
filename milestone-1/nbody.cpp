@@ -51,37 +51,67 @@ void write_to_file(Body* bodies, string filename, int n, int t) {
     file.close();
 }
 
-void initialize_bodies(Body* bodies, int n) {
+void initialize_bodies(Body* bodies, int n, string initialization_type) {
     // Set the random seed
     // srand(1); 
     int i;
     double phi, theta;
 
-    #pragma omp parallel for default(none) private(i, phi, theta) shared(bodies, n) schedule(guided)
+    #pragma omp parallel for default(none) private(i, phi, theta) shared(bodies, n, initialization_type) schedule(guided)
     for (i = 0; i < n; i++) {
         // sample random phi and theta
         phi = 2 * M_PI * (double)rand() / (double)RAND_MAX;
         theta = acos((double)rand() / (double)RAND_MAX);
 
-        // Set the position to follow parametrized elipse
-        bodies[i].r.x = cos(theta) * sin(phi);
-        bodies[i].r.y = sin(theta) * sin(phi);
-        bodies[i].r.z = cos(phi);
+        if (initialization_type == "random") {
+            // set position, velocity, and mass to random values
+            bodies[i].r.x = (double)rand() / (double)RAND_MAX;
+            bodies[i].r.y = (double)rand() / (double)RAND_MAX;
+            bodies[i].r.z = (double)rand() / (double)RAND_MAX;
 
-        // Set the velocity to follow parametrized elipse
-        bodies[i].v.x = -sin(theta) * sin(phi);
-        bodies[i].v.y = cos(theta) * sin(phi);
-        bodies[i].v.z = -sin(phi);
+            bodies[i].v.x = (double)rand() / (double)RAND_MAX;
+            bodies[i].v.y = (double)rand() / (double)RAND_MAX;
+            bodies[i].v.z = (double)rand() / (double)RAND_MAX;
 
-        // Set the mass to be a function of the radius to the center of the elipse
-        bodies[i].m = 1.0 / (1.0 + bodies[i].r.x * bodies[i].r.x + bodies[i].r.y * bodies[i].r.y + bodies[i].r.z * bodies[i].r.z);
+            bodies[i].m = (double)rand() / (double)RAND_MAX;
+        }
+        else if (initialization_type == "uniform") {
+            // set position, velocity, and mass to uniform values
+            bodies[i].r.x = (double)(i + 1) / (double)n;
+            bodies[i].r.y = (double)(i + 1) / (double)n;
+            bodies[i].r.z = (double)(i + 1) / (double)n;
+
+            bodies[i].v.x = (double)(i + 1) / (double)n;
+            bodies[i].v.y = (double)(i + 1) / (double)n;
+            bodies[i].v.z = (double)(i + 1) / (double)n;
+
+            bodies[i].m = (double)(i + 1) / (double)n;
+        }
+        else if (initialization_type == "elipsoid") {
+            // Set the position to follow parametrized elipse
+            bodies[i].r.x = cos(theta) * sin(phi);
+            bodies[i].r.y = sin(theta) * sin(phi);
+            bodies[i].r.z = cos(phi);
+
+            // Set the velocity to follow parametrized elipse
+            bodies[i].v.x = -sin(theta) * sin(phi);
+            bodies[i].v.y = cos(theta) * sin(phi);
+            bodies[i].v.z = -sin(phi);
+
+            // Set the mass to be a function of the radius to the center of the elipse
+            bodies[i].m = 1.0 / (1.0 + bodies[i].r.x * bodies[i].r.x + bodies[i].r.y * bodies[i].r.y + bodies[i].r.z * bodies[i].r.z);
+        }
+        else {
+            assert("Invalid initialization type");
+            exit(1);
+        }        
     }    
 }
 
-void nbody(int n, double dt, int N, double G){
+void nbody(int n, double dt, int N, double G, string initialization_type){
     // Initialize the bodies
     Body* bodies = new Body[n];
-    initialize_bodies(bodies, n);
+    initialize_bodies(bodies, n, initialization_type);
     cartesian3D F_ij;
 
     for (int t = 0; t < N; t++) {
@@ -154,16 +184,18 @@ int main(int argc, char** argv) {
     int N = stoi(argv[3]); // Number of timesteps
     double G = stod(argv[4]); // Gravitational constant
     int num_threads = stoi(argv[5]); // Number of threads
+    string initialization_type = argv[6]; // Initialization type
 
     cout << "Simulation Parameters:" << endl;
     cout << "Number of particles: " << n << endl;
     cout << "Timestep: " << dt << endl;
     cout << "Number of timesteps: " << N << endl;
     cout << "Gravitational constant: " << G << endl;
+    cout << "Initialization type: " << initialization_type << endl;
 
     // Set number of threads
-    cout << "Number of threads = " << num_threads << "\n" << endl;
     omp_set_num_threads(num_threads);
+    cout << "Number of threads = " << num_threads << "\n" << endl;
 
     // Timing variables
     double ts;
@@ -171,7 +203,7 @@ int main(int argc, char** argv) {
 
     // Perform simulation
     ts = omp_get_wtime();
-    nbody(n, dt, N, G);
+    nbody(n, dt, N, G, initialization_type);
     tf = omp_get_wtime();
 
     // Print time taken

@@ -1,0 +1,10 @@
+# Mac files
+.DS_Store
+
+
+# VS Code files
+.vscode
+.vscode/**
+
+# Output folder
+./milestone-1/output

@@ -27,7 +27,7 @@ To run the n-body algorithm written in `C++`, follow these steps.
 cd milestone-1
 ```
 
-2. Specify the input `n` **(number of bodies)**, `dt` **(timestep)**, `N` **(number of timesteps)** and `num_threads` **(number of OpenMP threads)** in the Makefile.
+2. Specify the input `n` **(number of bodies)**, `dt` **(timestep)**, `N` **(number of timesteps)**, the `initialization` **(initialization type for the bodies)** and `num_threads` **(number of OpenMP threads)** in the Makefile.
 
 3. Build and run - 
 ```
@@ -52,6 +52,7 @@ The outputs can be found in the `milestone-1/output` directory as `movie.mp4`.
 2. dt (timestep) = 0.1
 3. N (number of timesteps) = 500
 4. num_threads (number of OpenMP threads) = 8
+5. initialization = "random"
 ```
 
 ### Time Taken - 
@@ -63,9 +64,10 @@ Time Taken = 10.3677 seconds
 ### Inputs - 
 ```
 1. n (number of bodies) = 1000
-2. dt (timestep) = 0.001
+2. dt (timestep) = 0.1
 3. N (number of timesteps) = 1000
 4. num_threads (number of OpenMP threads) = 8
+5. initialization = "elipsoid"
 ```
 
 ### Results - 

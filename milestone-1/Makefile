@@ -5,11 +5,19 @@ GCC = g++-11
 # Checks
 VISUALIZE = "true"
 
+# Plot type
+plot_type = "point"
+
 # Input to cpp
-n = "500"
-dt = "0.1"
-NT = "2000"
+n = "1000"
+dt = "0.01"
+NT = "1000"
+
+# Constants
 G = "6.6743e-11"
+
+# Initialization method for the bodies
+initialization = "elipsoid"
 
 # Number of threads
 num_threads = "8"
@@ -30,14 +38,14 @@ nbody.out: ./nbody.cpp
 # Execute the following
 simulation: ./nbody.out
 	@echo "Simulating...\n"
-	./nbody.out $(n) $(dt) $(NT) $(G) $(num_threads)
+	./nbody.out $(n) $(dt) $(NT) $(G) $(num_threads) $(initialization)
 	@echo "\nSimulation Complete!\n"
 
 # Visualize simulation
 visualize:
 ifeq ($(VISUALIZE), "true")
 	@echo "Visualizing...\n"
-	$(PYTHON) ./visualize.py
+	$(PYTHON) ./visualize.py $(plot_type)
 	ffmpeg -i ./output/movie.avi -strict -2 ./output/movie.mp4         
 	rm ./output/movie.avi
 	@echo "\nVisualization Complete!\n"	
@@ -45,7 +53,7 @@ endif
 
 # Visualize (testing)
 visualize_test:
-	PYTHON visualize.py
+	PYTHON visualize.py $(plot_type)
 	ffmpeg -i ./output/movie.avi -strict -2 ./output/movie.mp4         
 	rm ./output/movie.avi
 

@@ -1,11 +1,11 @@
+import os
+import sys
+
+import ast
+
 import numpy as np
 import matplotlib.pyplot as plt
-import ast
-import os
 import cv2
-from multiprocessing import Pool
-
-
 
 plt.style.use('seaborn-poster')
 
@@ -24,10 +24,20 @@ def plot_point(point, ax):
     Plot the point.
     '''
     x, y, z = point
-    ax.scatter3D(x, y, z)
+    ax.scatter3D(x, y, z, cmap='winter')
     return ax
 
-def generate_movie():
+def plot_surface(grid, ax):
+    grid = np.array(grid)
+    X = grid[:,0]
+    Y = grid[:,1]
+    Z = grid[:,2]
+
+    ax.plot_trisurf(X, Y, Z, cmap='winter', edgecolor='none')
+    
+    return ax
+    
+def generate_movie(plot_flag="surface"):
     '''
     Plot and save the data.
     '''
@@ -43,13 +53,20 @@ def generate_movie():
             print("Plotting Simulation Sample : " + str(i))
 
             ax = fig.add_subplot(111, projection='3d')
+            ax.grid(True)
 
-            for point in data:
-                ax = plot_point(point, ax)
+            if plot_flag == "surface":
+                ax = plot_surface(data, ax)
+                ax.view_init(30, 60)
+            elif plot_flag == "point":
+                for point in data:
+                    ax = plot_point(point, ax)
+                ax.view_init(27, 32)
+            else:
+                raise ValueError("Invalid plot flag")
             
-            # ax.set_xlim(0, 1)
-            # ax.set_ylim(0, 1)
-            # ax.set_zlim(0, 1)
+            
+
 
             ax.set_xlabel('X')
             ax.set_ylabel('Y')
@@ -82,6 +99,9 @@ def generate_movie():
 if __name__ == '__main__':
     gen_mov = True
 
+    # Read in from the command line
+    plot_flag = sys.argv[1]
+
     if gen_mov:
-        generate_movie()
+        generate_movie(plot_flag=plot_flag)
 
