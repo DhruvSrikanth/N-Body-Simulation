@@ -49,7 +49,7 @@ The outputs can be found in the `milestone-1/output` directory as `movie.mp4`.
 ### Inputs - 
 ```
 1. n (number of bodies) = 102,400
-2. dt (timestep) = 0.1
+2. dt (timestep) = 0.01
 3. N (number of timesteps) = 500
 4. num_threads (number of OpenMP threads) = 8
 5. initialization = "random"
@@ -64,7 +64,7 @@ Time Taken = 10.3677 seconds
 ### Inputs - 
 ```
 1. n (number of bodies) = 1000
-2. dt (timestep) = 0.1
+2. dt (timestep) = 0.01
 3. N (number of timesteps) = 1000
 4. num_threads (number of OpenMP threads) = 8
 5. initialization = "elipsoid"
