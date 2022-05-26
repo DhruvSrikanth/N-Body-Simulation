@@ -101,6 +101,20 @@ void initialize_bodies(Body* bodies, int n, string initialization_type) {
             // Set the mass to be a function of the radius to the center of the elipse
             bodies[i].m = 1.0 / (1.0 + bodies[i].r.x * bodies[i].r.x + bodies[i].r.y * bodies[i].r.y + bodies[i].r.z * bodies[i].r.z);
         }
+        else if (initialization_type == "galaxy") {
+            // Set the position to follow parametrized spiral
+            bodies[i].r.x = cos(phi);
+            bodies[i].r.y = (i + 1)*sin(phi);
+            bodies[i].r.z = 1;
+
+            // Set the velocity to follow parametrized spiral
+            bodies[i].v.x = -sin(phi);
+            bodies[i].v.y = cos(phi);
+            bodies[i].v.z = 1.0;
+
+            // Set the mass to be a function of the radius to the center of the spiral
+            bodies[i].m = 1.0 / (1.0 + bodies[i].r.x * bodies[i].r.x + bodies[i].r.y * bodies[i].r.y + bodies[i].r.z * bodies[i].r.z);
+        }
         else {
             assert("Invalid initialization type");
             exit(1);
@@ -134,12 +148,11 @@ void nbody(int n, double dt, int N, double G, string initialization_type){
         int j = 0;
         double r_mag;
         cartesian3D F_i;
-        #pragma omp parallel for default(none) private(i, j, F_i, r_mag) shared(bodies, G, dt, n) schedule(guided) 
+        #pragma omp parallel for default(none) private(i, j, F_ij, F_i, r_mag) shared(bodies, G, dt, n) schedule(guided) 
         for (i = 0; i < n; i++) {
             // Compute the force on body i
             F_i = {0, 0, 0};
-
-            #pragma omp parallel for default(none) private(i, j, F_ij, F_i, r_mag) shared(bodies, G, n) schedule(guided)  
+            
             for (j = 0; j < n; j++) {
                 r_mag = sqrt(pow(bodies[j].r.x - bodies[i].r.x, 2) + pow(bodies[j].r.y - bodies[i].r.y, 2) + pow(bodies[j].r.z - bodies[i].r.z, 2));
 
