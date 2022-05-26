@@ -44,27 +44,6 @@ void print_body(Body b) {
    cout << "r: (" << b.r.x << " ," << b.r.y << " ," << b.r.z << ")" << "  v:" << b.v.x << " ," << b.v.y << " ," << b.v.z << ") m: " << b.m << endl;
 }
 
-void write_to_file(Body* bodies, string filename, int n, int t) { 
-    // Allocate memory for the file
-    ofstream file;
-    file.open(filename);
-
-    for (int i = 0; i < n; i++) {
-        if (i == 0) {
-            file << "[[" << bodies[i].r.x << "," << bodies[i].r.y << "," << bodies[i].r.z << "],";
-        }
-        else if (i == n - 1) {
-            file << "[" << bodies[i].r.x << "," << bodies[i].r.y << "," << bodies[i].r.z << "]]";
-        }
-        else {
-            file << "[" << bodies[i].r.x << "," << bodies[i].r.y << "," << bodies[i].r.z << "],";
-        }
-    }
-
-    // Release the memory for the file
-    file.close();
-}
-
 int local_to_global_1d_offset(int mype, int nprocs) {
     int offset = mype * nprocs;
     return offset;
@@ -155,45 +134,69 @@ void initialize_bodies(Body* bodies, int n_local, string initialization_type, in
     }    
 }
 
-double distance(Body b1, Body b2) {
-    double res;
-    double dx = b1.r.x - b2.r.x;
-    double dy = b1.r.y - b2.r.y;
-    double dz = b1.r.z - b2.r.z;
-    res = sqrt(dx * dx + dy * dy + dz * dz);
-    return res;
+void write_to_file(Body* bodies, string filename, int n) { 
+    // Allocate memory for the file
+    ofstream file;
+    file.open(filename);
+
+    for (int i = 0; i < n; i++) {
+        if (i == 0) {
+            file << "[[" << bodies[i].r.x << "," << bodies[i].r.y << "," << bodies[i].r.z << "],";
+        }
+        else if (i == n - 1) {
+            file << "[" << bodies[i].r.x << "," << bodies[i].r.y << "," << bodies[i].r.z << "]]";
+        }
+        else {
+            file << "[" << bodies[i].r.x << "," << bodies[i].r.y << "," << bodies[i].r.z << "],";
+        }
+    }
+
+    // Release the memory for the file
+    file.close();
 }
 
-cartesian3D compute_force(Body b1, Body b2, double distance_ij, double G) {
-    // Compute the force on body 1 due to body 2
-    cartesian3D force;
+void collect_and_write_array(Body *bodies, string filename, int n_local, int mype, int nprocs, MPI_Comm comm1d, MPI_Datatype MPI_Body) {
+    // Initialize the required variables
+    int n_global = n_local * nprocs;
 
-    force.x = G * b1.m * b2.m * (b2.r.x - b1.r.x) / pow(distance_ij, 3);
-    force.y = G * b1.m * b2.m * (b2.r.y - b1.r.y) / pow(distance_ij, 3);
-    force.z = G * b1.m * b2.m * (b2.r.z - b1.r.z) / pow(distance_ij, 3);
+    // For processor 0
+    if (mype == 0) {
+        // Processor 0's contribution to the global output
+        Body* global_out = new Body[n_global];
+        for (int i = 0; i < n_local; i++) {
+            global_out[i] = bodies[i];
+        }
 
-    return force;
-}
+        // Every other processor's contribution to the global output
+        Body* local_buffer = new Body[n_local];
+        for (int proc = 1; proc < nprocs; proc++) {
+            MPI_Recv(local_buffer, n_local, MPI_Body, proc, 99, comm1d, MPI_STATUS_IGNORE);
 
-Body update_velocity(Body b, cartesian3D F, double dt) {
-    // Compute the velocity of body b
-    b.v.x += dt * F.x / b.m;
-    b.v.y += dt * F.y / b.m;
-    b.v.z += dt * F.z / b.m;
-    return b;
-}
+            int global_start_index = local_to_global_1d_offset(proc, n_local);
+            for (int i = 0; i < n_local; i++) {
+                global_out[global_start_index + i] = local_buffer[i];
+            }
+        }
+        // cout << "mype 0 - ";
+        // print_body(global_out[n_local*mype + 1]);
+        // cout << "mype 1 - ";
+        // print_body(global_out[n_local*mype + 1]);
+        // cout << "mype 2 - ";
+        // print_body(global_out[n_local*mype + 1]);
+        // cout << "mype 3 - ";
+        // print_body(global_out[n_local*mype + 1]);
 
-void update_positions(Body *bodies, int n_local, double dt) {
-    int i;
-    #pragma omp parallel for default(none) private(i) shared(bodies, dt, n_local) schedule(guided) 
-    for (i = 0; i < n_local; i++) {
-        bodies[i].r.x += dt * bodies[i].v.x;
-        bodies[i].r.y += dt * bodies[i].v.y;
-        bodies[i].r.z += dt * bodies[i].v.z;
+        // Write to file
+        write_to_file(global_out, filename, n_global);
+    }
+    // For other processors
+    else {
+        // send to processor 0
+        MPI_Send(bodies, n_local, MPI_Body, 0, 99, comm1d);
     }
 }
 
-void nbody(int n_local, double dt, int N, double G, string initialization_type, int mype, int nprocs, MPI_Comm comm1d, MPI_Datatype MPI_Body){
+void nbody(int n_local, double dt, int N, double G, string initialization_type, int mype, int nprocs, int left, int right, MPI_Comm comm1d, MPI_Datatype MPI_Body){
     // Initialize the bodies
     Body* bodies_local = new Body[n_local];
     Body* bodies_remote = new Body[n_local];
@@ -202,18 +205,19 @@ void nbody(int n_local, double dt, int N, double G, string initialization_type, 
     initialize_bodies(bodies_local, n_local, initialization_type, mype, nprocs);
 
     // Send local to remote and receive remote to local
-    for (int r = 0; r < nprocs; r++) {
+    for (int r = 1; r < nprocs; r++) {
         if (mype == 0) {
             initialize_bodies(bodies_remote, n_local, initialization_type, r, nprocs);
             // Send to remote
             MPI_Send(bodies_remote, n_local, MPI_Body, r, 99, comm1d);
         }
-        else {
-            // Receive from remote
-            MPI_Recv(bodies_local, n_local, MPI_Body, 0, 99, comm1d, MPI_STATUS_IGNORE);
-        }
     }
 
+    if (mype != 0) {
+        // Receive from remote
+        MPI_Recv(bodies_local, n_local, MPI_Body, 0, 99, comm1d, MPI_STATUS_IGNORE);
+    }
+    
     cartesian3D F_ij;
 
     for (int t = 0; t < N; t++) {
@@ -221,7 +225,7 @@ void nbody(int n_local, double dt, int N, double G, string initialization_type, 
         if (t % 10 == 0) {
             char filename[100];
             int dummy_var = sprintf(filename, "./output/t_%d.txt", t);
-            // write_to_file(bodies, filename, n_local, t);
+            collect_and_write_array(bodies_local, filename, n_local, mype, nprocs, comm1d, MPI_Body);
         }
 
         // Timing variables
@@ -237,8 +241,8 @@ void nbody(int n_local, double dt, int N, double G, string initialization_type, 
         // Pipeline for computing forces on local bodies from other local and remote bodies
         for (int r = 0; r < nprocs; r++) {
             // Compute the forces
-            int i = 0;
-            int j = 0;
+            int i;
+            int j;
             double distance_ij;
             cartesian3D F_i;
 
@@ -250,27 +254,40 @@ void nbody(int n_local, double dt, int N, double G, string initialization_type, 
 
                 // For each remote body
                 for (j = 0; j < n_local; j++) {
-                    distance_ij = distance(bodies_local[j], bodies_remote[i]);
+                    distance_ij = sqrt(pow(bodies_remote[j].r.x - bodies_local[i].r.x, 2) + pow(bodies_remote[j].r.y - bodies_local[i].r.y, 2) + pow(bodies_remote[j].r.z - bodies_local[i].r.z, 2));
 
                     if (distance_ij > 0.0) {
-                        F_ij = compute_force(bodies_local[i], bodies_remote[j], distance_ij, G);
+                        // Compute the force on body j
+                        F_ij.x = G * bodies_local[i].m * bodies_remote[j].m * (bodies_remote[j].r.x - bodies_local[i].r.x) / pow(distance_ij, 3);
+                        F_ij.y = G * bodies_local[i].m * bodies_remote[j].m * (bodies_remote[j].r.y - bodies_local[i].r.y) / pow(distance_ij, 3);
+                        F_ij.z = G * bodies_local[i].m * bodies_remote[j].m * (bodies_remote[j].r.z - bodies_local[i].r.z) / pow(distance_ij, 3);
+
                         // Add the force to the total force on body i
-                        F_i = add_vectors(F_i, F_ij);
+                        F_i.x += F_ij.x;
+                        F_i.y += F_ij.y;
+                        F_i.z += F_ij.z;
                     }
                 }
                 
                 // Update the velocity of body i
-                bodies_local[i] = update_velocity(bodies_local[i], F_i, dt);
+                bodies_local[i].v.x += dt * F_i.x / bodies_local[i].m;
+                bodies_local[i].v.y += dt * F_i.y / bodies_local[i].m;
+                bodies_local[i].v.z += dt * F_i.z / bodies_local[i].m;
             }
             // Send Bremote buffer to left neighbor rank
             MPI_Status status;
-            MPI_Sendrecv(bodies_remote, n_local, MPI_Body, r - 1, 99, bodies_buffer, n_local, MPI_Body, r + 1, MPI_ANY_TAG, comm1d, &status);
+            MPI_Sendrecv(bodies_remote, n_local, MPI_Body, left, 99, bodies_buffer, n_local, MPI_Body, right, MPI_ANY_TAG, comm1d, &status);
             // Receive new Bremote buffer from right neighbor rank
             copy_array(bodies_buffer, bodies_remote, n_local);
         }
 
-        // Update the position of each body
-        update_positions(bodies_local, n_local, dt);
+        int i;
+        #pragma omp parallel for default(none) private(i) shared(bodies_local, dt, n_local) schedule(guided) 
+        for (i = 0; i < n_local; i++) {
+            bodies_local[i].r.x += dt * bodies_local[i].v.x;
+            bodies_local[i].r.y += dt * bodies_local[i].v.y;
+            bodies_local[i].r.z += dt * bodies_local[i].v.z;
+        }
 
         // Stop the timer
         t2 = omp_get_wtime();
@@ -315,7 +332,6 @@ int main(int argc, char** argv) {
     offsets[2] = offsetof(Body, m);
     MPI_Type_create_struct(nitems, blocklengths, offsets, types, &MPI_Body);
     MPI_Type_commit(&MPI_Body);
-
 
     // MPI Cartesian Grid Creation (1D)
     int dims[DIMENSION], periodic[DIMENSION], coords[DIMENSION];
@@ -368,7 +384,7 @@ int main(int argc, char** argv) {
 
     // Perform simulation
     ts = omp_get_wtime();
-    nbody(n_local, dt, N, G, initialization_type, mype, nprocs, comm1d, MPI_Body);
+    nbody(n_local, dt, N, G, initialization_type, mype, nprocs, left, right, comm1d, MPI_Body);
     tf = omp_get_wtime();
 
     // Print time taken
