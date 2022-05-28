@@ -1,5 +1,6 @@
 # Project 4 - N Body Problem
 
+# Milestone 1 - Serial CPU Implementation (with OpenMP)
 ## Local System Information:
 ### Processor:
 
@@ -51,14 +52,14 @@ The outputs can be found in the `milestone-1/output` directory as `movie.mp4`.
 1. n (number of bodies) = 102,400
 2. dt (timestep) = 0.01
 3. N (number of timesteps) = 500
-4. num_threads (number of OpenMP threads) = 8
+4. num_threads (number of OpenMP threads) = 1 (For serial testing)
 5. initialization = "random"
 ```
 
 ### Time Taken - 
 
 ```
-Time Taken = 10.3677 seconds
+Time Taken = 17.367750 seconds per iteration.
 ```
 
 ### Inputs - 
@@ -70,8 +71,37 @@ Time Taken = 10.3677 seconds
 5. initialization = "elipsoid"
 ```
 
-### Results - 
+### Animation Results - 
 
-The animation of the simulation with the above input parameters can be found [here](https://drive.google.com/drive/folders/1OTozCm7gYgTSGpDCiIvXJGXIhaZS_DjR) under `movie.mp4`.
+The animation of the simulation with the above input parameters can be found [here](https://drive.google.com/drive/folders/1OTozCm7gYgTSGpDCiIvXJGXIhaZS_DjR) under `serial.mp4`.
 
+### Strong Scaling (OpenMP) - 
+
+Verification of correctness - 
+
+I tried the experiment with 2 bodies, computed the force after 1 iteration and checked my output text file against the manually computed results. Since they matched, I verified correctness in this way (quantitatively). For qualitative vertification of correctness, one can view the output animation between the serial and parallel (shared memory parallelism) versions which can be found [here](https://drive.google.com/drive/folders/1OTozCm7gYgTSGpDCiIvXJGXIhaZS_DjR) under `serial.mp4` and `parallel_omp.mp4` respectively.
+
+The inputs for qualitative verification are given below - 
+```
+1. n (number of bodies) = 1000
+2. dt (timestep) = 0.01
+3. N (number of timesteps) = 1000
+4. num_threads (number of OpenMP threads) = 1 (serial) and 8 (OpenMP Shared Memory Parallelism)
+5. initialization = "elipsoid"
+```
+
+
+Strong Scaling for Shared Memory Parallelism - 
+
+Given below is the data for and a plot of strong scaling as a function of OpenMP thread count.
+
+| Cores       | time (secs/iter)    |
+| ----------- | ----------- |
+| 1           | 17.3392     |
+| 2           | 8.9305     |
+| 4           | 4.5864     |
+| 6           | 3.1169     |
+| 8           | 2.8383     |
+
+![strong_scaling_1](../milestone-1/strong_scaling_1.png)
 

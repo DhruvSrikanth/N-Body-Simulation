@@ -23,16 +23,6 @@ void print_cartesian3D(cartesian3D point) {
   cout << "(" << point.x << ", " << point.y << ", " << point.z << ")" << endl;
 }
 
-cartesian3D add_vectors(cartesian3D a, cartesian3D b) {
-    cartesian3D c;
-
-    c.x = a.x + b.x;
-    c.y = a.y + b.y;
-    c.z = a.z + b.z;
-
-    return c;
-}
-
 // Data structure to represent each body in the simulation
 struct Body {
     cartesian3D r; // position

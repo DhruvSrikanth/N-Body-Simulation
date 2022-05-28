@@ -54,8 +54,8 @@ def generate_movie(plot_flag="surface"):
 
             ax = fig.add_subplot(111, projection='3d')
             ax.grid(True)
-            ax.axis('off')
-            ax.set_facecolor('xkcd:black')
+            # ax.axis('off')
+            # ax.set_facecolor('xkcd:black')
 
             if plot_flag == "surface":
                 ax = plot_surface(data, ax)
@@ -67,9 +67,6 @@ def generate_movie(plot_flag="surface"):
             else:
                 raise ValueError("Invalid plot flag")
             
-            
-
-
             ax.set_xlabel('X')
             ax.set_ylabel('Y')
             ax.set_zlabel('Z')
