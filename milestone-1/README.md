@@ -104,3 +104,5 @@ Given below is the data for and a plot of strong scaling as a function of OpenMP
 
 ![strong_scaling_1](./strong_scaling_1.png)
 
+OpenMP strong scaling appears to be quite good. I expect this to be this way as we have several loops that can be multithreaded with OpenMP.
+

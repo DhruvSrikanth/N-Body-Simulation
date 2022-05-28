@@ -366,6 +366,8 @@ int main(int argc, char** argv) {
         // Set number of threads
         omp_set_num_threads(num_threads);
         cout << "Number of threads = " << num_threads << "\n" << endl;
+
+        cout << "Number of MPI ranks: " << nprocs << endl;
     }
 
     // Timing variables

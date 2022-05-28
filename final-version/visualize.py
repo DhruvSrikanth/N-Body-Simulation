@@ -27,6 +27,25 @@ def plot_point(point, ax):
     ax.scatter3D(x, y, z, cmap='winter')
     return ax
 
+def plot_points(data, ax):
+    '''
+    Plot the points.
+    '''
+    x = []
+    y = []
+    z = []
+    for point in data:
+        x.append(point[0])
+        y.append(point[1])
+        z.append(point[2])
+    
+    x = np.array(x)
+    y = np.array(y)
+    z = np.array(z)
+    
+    ax.scatter3D(x, y, z, cmap='winter')
+    return ax
+
 def plot_surface(grid, ax):
     grid = np.array(grid)
     X = grid[:,0]
@@ -59,8 +78,11 @@ def generate_movie(plot_flag="surface"):
                 ax = plot_surface(data, ax)
                 ax.view_init(30, 60)
             elif plot_flag == "point":
-                for point in data:
-                    ax = plot_point(point, ax)
+
+                # for point in data:
+                #     ax = plot_point(point, ax)
+
+                ax = plot_points(data, ax)
                 ax.view_init(27, 32)
             else:
                 raise ValueError("Invalid plot flag")
