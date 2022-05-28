@@ -20,7 +20,8 @@ struct cartesian3D {
 };
 
 void print_cartesian3D(cartesian3D point) {
-  cout << "(" << point.x << ", " << point.y << ", " << point.z << ")" << endl;
+    // Prints a point in 3D Cartesian space
+    cout << "(" << point.x << ", " << point.y << ", " << point.z << ")" << endl;
 }
 
 // Data structure to represent each body in the simulation
@@ -31,15 +32,19 @@ struct Body {
 };
 
 void print_body(Body b) {
-   cout << "r: (" << b.r.x << " ," << b.r.y << " ," << b.r.z << ")" << "  v:" << b.v.x << " ," << b.v.y << " ," << b.v.z << ") m: " << b.m << endl;
+    // Prints a body
+    cout << "r: (" << b.r.x << " ," << b.r.y << " ," << b.r.z << ")" << "  v:" << b.v.x << " ," << b.v.y << " ," << b.v.z << ") m: " << b.m << endl;
 }
 
 int local_to_global_1d_offset(int mype, int nprocs) {
+    // Returns the 1D offset of the local node in the global array
     int offset = mype * nprocs;
     return offset;
 }
 
 void copy_array(Body *source, Body *destination, int n) {
+    // Copies the contents of source to destination
+    // Equivalent to deepcopy in python (references are not copied)
     int i;
     #pragma omp parallel for default(none) private(i) shared(source, destination, n) schedule(guided)  
     for (i = 0; i < n; i++) {
@@ -48,6 +53,8 @@ void copy_array(Body *source, Body *destination, int n) {
 }
 
 void initialize_bodies(Body* bodies, int n_local, string initialization_type, int mype, int nprocs) {
+    // Initializes the bodies array with random values
+
     // Set the random seed
     // srand(1); 
     int i;
@@ -146,6 +153,7 @@ void write_to_file(Body* bodies, string filename, int n) {
 }
 
 void collect_and_write_array(Body *bodies, string filename, int n_local, int mype, int nprocs, MPI_Comm comm1d, MPI_Datatype MPI_Body) {
+    // Collect the bodies from all processors and write them to a file
     // Initialize the required variables
     int n_global = n_local * nprocs;
 
@@ -167,14 +175,6 @@ void collect_and_write_array(Body *bodies, string filename, int n_local, int myp
                 global_out[global_start_index + i] = local_buffer[i];
             }
         }
-        // cout << "mype 0 - ";
-        // print_body(global_out[n_local*mype + 1]);
-        // cout << "mype 1 - ";
-        // print_body(global_out[n_local*mype + 1]);
-        // cout << "mype 2 - ";
-        // print_body(global_out[n_local*mype + 1]);
-        // cout << "mype 3 - ";
-        // print_body(global_out[n_local*mype + 1]);
 
         // Write to file
         write_to_file(global_out, filename, n_global);
@@ -187,11 +187,12 @@ void collect_and_write_array(Body *bodies, string filename, int n_local, int myp
 }
 
 void nbody(int n_local, double dt, int N, double G, string initialization_type, int mype, int nprocs, int left, int right, MPI_Comm comm1d, MPI_Datatype MPI_Body){
-    // Initialize the bodies
+    // Allocate memory for the bodies
     Body* bodies_local = new Body[n_local];
     Body* bodies_remote = new Body[n_local];
     Body* bodies_buffer = new Body[n_local];
 
+    // Initialize the bodies
     initialize_bodies(bodies_local, n_local, initialization_type, mype, nprocs);
 
     // Send local to remote and receive remote to local
@@ -210,6 +211,7 @@ void nbody(int n_local, double dt, int N, double G, string initialization_type, 
     
     cartesian3D F_ij;
 
+    // Run simulation over N timesteps
     for (int t = 0; t < N; t++) {
         // Write the bodies to a file
         if (t % 10 == 0) {
@@ -264,13 +266,17 @@ void nbody(int n_local, double dt, int N, double G, string initialization_type, 
                 bodies_local[i].v.y += dt * F_i.y / bodies_local[i].m;
                 bodies_local[i].v.z += dt * F_i.z / bodies_local[i].m;
             }
+
             // Send Bremote buffer to left neighbor rank
+            // Receive new Bremote buffer from right neighbor rank
             MPI_Status status;
             MPI_Sendrecv(bodies_remote, n_local, MPI_Body, left, 99, bodies_buffer, n_local, MPI_Body, right, MPI_ANY_TAG, comm1d, &status);
-            // Receive new Bremote buffer from right neighbor rank
+
+            // Copy Bbuffer to Bremote
             copy_array(bodies_buffer, bodies_remote, n_local);
         }
 
+        // Update the positions of the local bodies
         int i;
         #pragma omp parallel for default(none) private(i) shared(bodies_local, dt, n_local) schedule(guided) 
         for (i = 0; i < n_local; i++) {
@@ -342,9 +348,6 @@ int main(int argc, char** argv) {
 
     // Initialize variables
     int n_global = stoi(argv[1]); // Number of particles
-
-    // Check whether the physical domain can be divided evenly among the MPI ranks
-    assert(n_global % nprocs == 0);
 
     // Number of particles per MPI rank
     int n_local = n_global / nprocs;
