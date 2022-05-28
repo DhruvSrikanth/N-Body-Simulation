@@ -105,3 +105,7 @@ Given below is the data for and a plot of strong scaling as a function of OpenMP
 
 ![strong_scaling_1](../milestone-1/strong_scaling_1.png)
 
+
+
+
+

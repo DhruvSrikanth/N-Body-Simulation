@@ -1,0 +1,20 @@
+#!/bin/bash
+
+#SBATCH --job-name=dhruvsrikanth-hpc
+#SBATCH --output=batch_file.stdout
+#SBATCH --error=batch_file.stderr
+#SBATCH --time=00:15:00
+#SBATCH --partition=caslake
+#SBATCH --exclusive
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --cpus-per-task=1
+#SBATCH --mem-per-cpu=2000
+
+module load openmpi
+
+mpic++ ./nbody.cpp -o ./nbody.out -O3 -ffast-math -march=native -mtune=native -lm -lmpi -fopenmp
+
+mpiexec --bind-to none --report-bindings ./nbody.out "102400" "0.1" "10" "6.6743e-11" "8" "elipsoid"
+
+rm ./nbody.out
